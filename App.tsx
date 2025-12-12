@@ -3,16 +3,12 @@ import { UploadedFile, ProcessingLog } from './types';
 import DropZone from './components/DropZone';
 import FileList from './components/FileList';
 import { saveFilesToDirectory, isFileSystemAccessSupported, saveFilesAsZip } from './services/fileSystem';
-import { analyzeFilesWithGemini } from './services/geminiService';
-import { IconSave, IconSparkles } from './components/Icon';
-import Markdown from 'react-markdown';
+import { IconSave } from './components/Icon';
 
 const App: React.FC = () => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [logs, setLogs] = useState<ProcessingLog[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [saveProgress, setSaveProgress] = useState<{ current: number; total: number } | null>(null);
 
   const addLog = (message: string, type: ProcessingLog['type'] = 'info') => {
@@ -34,13 +30,11 @@ const App: React.FC = () => {
 
     setFiles(prev => [...prev, ...newFiles]);
     addLog(`Added ${newFiles.length} files to staging area.`, 'info');
-    setAnalysisResult(null); // Clear previous analysis
   }, []);
 
   const handleClear = () => {
     setFiles([]);
     setLogs([]);
-    setAnalysisResult(null);
     setSaveProgress(null);
   };
 
@@ -61,8 +55,6 @@ const App: React.FC = () => {
             files,
             (current, total, filename) => {
               setSaveProgress({ current, total });
-              if (current % 5 === 0) { // UI update throttling
-              }
             }
           );
 
@@ -100,20 +92,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAnalyze = async () => {
-    setIsAnalyzing(true);
-    addLog("Starting Gemini analysis...", "info");
-    try {
-      const result = await analyzeFilesWithGemini(files);
-      setAnalysisResult(result);
-      addLog("Analysis complete.", "success");
-    } catch (error: any) {
-      addLog(`Analysis failed: ${error.message}`, "error");
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 selection:bg-blue-500/30">
       
@@ -128,9 +106,6 @@ const App: React.FC = () => {
               LocalDrive Sync
             </h1>
           </div>
-          <div className="flex gap-4">
-             {/* Optional Header Actions */}
-          </div>
         </div>
       </header>
 
@@ -141,7 +116,7 @@ const App: React.FC = () => {
           
           <div className="lg:col-span-2 space-y-6">
              <div className="bg-slate-900 rounded-2xl p-1 shadow-xl border border-slate-800">
-               <DropZone onFilesSelected={handleFilesSelected} disabled={isSaving || isAnalyzing} />
+               <DropZone onFilesSelected={handleFilesSelected} disabled={isSaving} />
              </div>
 
              {/* Action Bar */}
@@ -165,21 +140,8 @@ const App: React.FC = () => {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={handleAnalyze}
-                    disabled={files.length === 0 || isAnalyzing || isSaving}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg font-medium transition-all shadow-lg shadow-purple-900/20 active:scale-95"
-                  >
-                    {isAnalyzing ? (
-                      <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"/>
-                    ) : (
-                      <IconSparkles className="w-5 h-5" />
-                    )}
-                    {isAnalyzing ? 'Analyzing...' : 'Analyze with AI'}
-                  </button>
-
-                  <button
                     onClick={handleSaveToLocal}
-                    disabled={files.length === 0 || isSaving || isAnalyzing}
+                    disabled={files.length === 0 || isSaving}
                     className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg font-medium transition-all shadow-lg shadow-blue-900/20 active:scale-95"
                   >
                     {isSaving ? (
@@ -191,19 +153,6 @@ const App: React.FC = () => {
                   </button>
                 </div>
              </div>
-             
-             {/* Analysis Result */}
-             {analysisResult && (
-               <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl">
-                 <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-4 flex items-center gap-2">
-                   <IconSparkles className="w-6 h-6 text-purple-400" />
-                   AI Analysis
-                 </h2>
-                 <div className="prose prose-invert prose-sm max-w-none text-slate-300">
-                    <Markdown>{analysisResult}</Markdown>
-                 </div>
-               </div>
-             )}
           </div>
 
           <div className="lg:col-span-1 space-y-6">
