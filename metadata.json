@@ -1,5 +1,5 @@
 {
-  "name": "LocalDrive Sync & AI Analyzer",
-  "description": "A powerful web interface to upload folders, save them directly to your local file system, and analyze code/text content using Gemini AI.",
+  "name": "LocalDrive Sync",
+  "description": "A powerful web interface to upload folders and save them directly to your local file system.",
   "requestFramePermissions": []
 }
